@@ -78,9 +78,9 @@ our %EXPORT_TAGS = (
       qw(
         wait_probability servers_waitprob traffic_waitprob
         maxtime_probability servers_maxtime traffic_maxtime
-           service_time_maxtime max_time_maxtime
+        service_time_maxtime max_time_maxtime
         average_wait_time servers_waittime traffic_waittime
-           service_time_waittime
+        service_time_waittime
         )
    ]
 );
@@ -91,7 +91,7 @@ our @EXPORT = qw(
 
 );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 # Preloaded methods go here.
 
@@ -135,7 +135,7 @@ below.
         sub { defined($_[0]) && $_[0] >= 0 && $_[0] == int($_[0]) },
       probability => sub { defined($_[0]) && $_[0] >= 0 && $_[0] <= 1 },
       time => sub { defined($_[0]) && $_[0] >= 0 },
-      precision => sub { ! defined($_[0]) || ($_[0] > 0) },
+      precision => sub { !defined($_[0]) || ($_[0] > 0) },
    );
 
    sub validate {
@@ -190,8 +190,12 @@ sub servers_waitprob {
    return 0     unless $wait_probability < 1;
 
    Math::Telephony::ErlangB::_generic_servers(
-      sub { wait_probability($traffic, $_[0]) > $wait_probability });
-} ## end sub servers_wait
+      sub {
+         my $v = wait_probability($traffic, $_[0]);
+         return defined $v && $v > $wait_probability;
+      }
+   );
+} ## end sub servers_waitprob
 
 =item B<$traffic = traffic_waitprob($servers, $wait_probability, $prec);>
 
@@ -211,17 +215,22 @@ sub traffic_waitprob {
       probability => $wait_probability,
       precision   => $prec,
      );
-   return 0 unless $servers > 0;
-   return 0 unless $wait_probability > 0;
+   return 0     unless $servers > 0;
+   return 0     unless $wait_probability > 0;
    return undef unless $wait_probability < 1;
 
    $prec = $Math::Telephony::ErlangB::default_precision
      unless defined $prec;
 
    Math::Telephony::ErlangB::_generic_traffic(
-      sub { wait_probability($_[0], $servers) < $wait_probability },
-      $prec, $servers);
-} ## end sub traffic_wait
+      sub {
+         my $v = wait_probability($_[0], $servers);
+         return defined $v && $v < $wait_probability;
+      },
+      $prec,
+      $servers
+   );
+} ## end sub traffic_waitprob
 
 =back
 
@@ -242,21 +251,21 @@ sub maxtime_probability {
    my ($traffic, $servers, $mst, $maxtime) = @_;
    return undef
      unless validate(
-      traffic     => $traffic,
-      servers     => $servers,
-      time        => $mst,
-      time        => $maxtime,
+      traffic => $traffic,
+      servers => $servers,
+      time    => $mst,
+      time    => $maxtime,
      );
-   return 1 unless $traffic;
-   return 0 unless $servers;
-   return 1 unless $mst;
-   return 0 unless $maxtime;
+   return 1     unless $traffic;
+   return 0     unless $servers;
+   return 1     unless $mst;
+   return 0     unless $maxtime;
+   return undef unless $servers > $traffic;
 
-   my $bprob =
-     Math::Telephony::ErlangB::blocking_probability($traffic, $servers);
-   return undef unless defined $bprob;
+   my $wprob = wait_probability($traffic, $servers);
+   return undef unless defined $wprob;
 
-   return 1 - $bprob * exp(-($servers - $traffic) * $maxtime / $mst);
+   return 1 - $wprob * exp(-($servers - $traffic) * $maxtime / $mst);
 } ## end sub maxtime_probability
 
 =item B<$servers = servers_maxtime($traffic, $maxtime_probability, $mst, $maxtime);>
@@ -277,15 +286,15 @@ sub servers_maxtime {
       time        => $mst,
       time        => $maxtime,
      );
-   return 0 unless $traffic > 0;
-   return 1 unless $mst > 0;
+   return 0     unless $traffic > 0;
+   return 1     unless $mst > 0;
    return undef unless $maxtime_probability > 0;
    return undef unless $maxtime > 0;
 
    Math::Telephony::ErlangB::_generic_servers(
       sub {
-         maxtime_probability($traffic, $_[0], $mst, $maxtime) <
-           $maxtime_probability;
+         my $v = maxtime_probability($traffic, $_[0], $mst, $maxtime);
+         return defined $v && $v < $maxtime_probability;
       }
    );
 } ## end sub servers_maxtime
@@ -322,14 +331,13 @@ sub traffic_maxtime {
 
    Math::Telephony::ErlangB::_generic_traffic(
       sub {
-         maxtime_probability($_[0], $servers, $mst, $maxtime) >
-           $maxtime_probability;
+         my $v = maxtime_probability($_[0], $servers, $mst, $maxtime);
+         return defined $v && $v > $maxtime_probability;
       },
       $prec,
       $servers
    );
 } ## end sub traffic_maxtime
-
 
 =item B<$mst = service_time_maxtime($traffic, $servers, $maxt_prob, $maxtime);>
 
@@ -346,18 +354,18 @@ sub service_time_maxtime {
       probability => $mprob,
       time        => $maxtime,
      );
-   return 0 unless $traffic > 0;
+   return 0     unless $traffic > 0;
    return undef unless $servers > 0;
-   return 0 unless $mprob > 0;
+   return 0     unless $mprob > 0;
    return undef unless $mprob < 1;
-	return 0 unless $maxtime > 0;
+   return 0     unless $maxtime > 0;
+   return undef unless $servers > $traffic;
 
    # Input already validated, use private "fast" function
-   my $bprob =
-     Math::Telephony::ErlangB::_blocking_probability($traffic, $servers);
+   my $wprob = wait_probability($traffic, $servers);
 
-   return -($servers - $traffic) * $maxtime / log((1 - $mprob) / $bprob);
-}
+   return -($servers - $traffic) * $maxtime / log((1 - $mprob) / $wprob);
+} ## end sub service_time_maxtime
 
 =item B<my $maxtime = max_time_maxtime($traffic, $servers, $maxt_prob, $mst);>
 
@@ -377,18 +385,17 @@ sub max_time_maxtime {
       probability => $mprob,
       time        => $mst,
      );
-   return 0 unless $traffic > 0;
+   return 0     unless $traffic > 0;
    return undef unless $servers > 0;
-   return 0 unless $mst;
-   return 0 unless $mprob > 0;
+   return 0     unless $mst;
+   return 0     unless $mprob > 0;
    return undef unless $mprob < 1;
-   return undef unless ($servers - $traffic);
+   return undef unless $servers > $traffic;
 
-   my $bprob =
-     Math::Telephony::ErlangB::_blocking_probability($traffic, $servers);
+   my $wprob = wait_probability($traffic, $servers);
 
-   return - $mst / (log((1 - $mprob) / $bprob) * ($servers - $traffic));
-}
+   return -$mst / (log((1 - $mprob) / $wprob) * ($servers - $traffic));
+} ## end sub max_time_maxtime
 
 ##########################################################################
 
@@ -407,22 +414,20 @@ sub average_wait_time {
    my ($traffic, $servers, $mst) = @_;
    return undef
      unless validate(
-      traffic     => $traffic,
-      servers     => $servers,
-      time        => $mst,
+      traffic => $traffic,
+      servers => $servers,
+      time    => $mst,
      );
-   return 0 unless $traffic > 0;
+   return 0     unless $traffic > 0;
    return undef unless $servers > 0;
-   return 0 unless $mst > 0;
-   return undef unless ($servers - $traffic);
+   return 0     unless $mst > 0;
+   return undef unless ($servers > $traffic);
 
    # Use private calculation function, input already validated
-   my $bprob =
-     Math::Telephony::ErlangB::_blocking_probability($traffic, $servers);
+   my $wprob = wait_probability($traffic, $servers);
 
-   return $bprob * $mst / ($servers - $traffic);
+   return $wprob * $mst / ($servers - $traffic);
 } ## end sub average_wait_time
-
 
 =item B<$servers = servers_waittime($traffic, $average_wait_time, $mst);>
 
@@ -437,22 +442,21 @@ sub servers_waittime {
 
    return undef
      unless validate(
-      traffic     => $traffic,
-      time        => $average_wait_time,
-      time        => $mst,
+      traffic => $traffic,
+      time    => $average_wait_time,
+      time    => $mst,
      );
-   return 0 unless $traffic > 0;
-   return 1 unless $mst > 0;
+   return 0     unless $traffic > 0;
+   return 1     unless $mst > 0;
    return undef unless $average_wait_time > 0;
 
    Math::Telephony::ErlangB::_generic_servers(
       sub {
-         return -1 unless ($_[0] - $traffic);
-         average_wait_time($traffic, $_[0], $mst) <
-           $average_wait_time;
+         my $v = average_wait_time($traffic, $_[0], $mst);
+         return defined $v && $v < $average_wait_time;
       }
    );
-}
+} ## end sub servers_waittime
 
 =item B<$traffic = traffic_waittime($servers, $average_wait_time, $mst, $prec);>
 
@@ -469,10 +473,10 @@ sub traffic_waittime {
    my ($servers, $average_wait_time, $mst, $prec) = @_;
    return undef
      unless validate(
-      servers     => $servers,
-      time        => $average_wait_time,
-      time        => $mst,
-      precision   => $prec,
+      servers   => $servers,
+      time      => $average_wait_time,
+      time      => $mst,
+      precision => $prec,
      );
    return 0     unless $servers > 0;
    return undef unless $average_wait_time > 0;
@@ -483,15 +487,13 @@ sub traffic_waittime {
 
    Math::Telephony::ErlangB::_generic_traffic(
       sub {
-         return 1 unless ($servers - $_[0]);
-         average_wait_time($_[0], $servers, $mst) >
-           $average_wait_time;
+         my $v = average_wait_time($_[0], $servers, $mst);
+         return defined $v && $v < $average_wait_time;
       },
       $prec,
       $servers
    );
-} ## end sub traffic_maxtime
-
+} ## end sub traffic_waittime
 
 =item B<$mst = service_time_waittime($traffic, $servers, $awt);>
 
@@ -504,22 +506,20 @@ sub service_time_waittime {
    my ($traffic, $servers, $awt) = @_;
    return undef
      unless validate(
-      traffic     => $traffic,
-      servers     => $servers,
-      time        => $awt,
+      traffic => $traffic,
+      servers => $servers,
+      time    => $awt,
      );
-   return 0 unless $traffic > 0;
+   return 0     unless $traffic > 0;
    return undef unless $servers > 0;
-   return 0 unless $awt > 0;
-   return undef unless ($servers - $traffic);
+   return 0     unless $awt > 0;
+   return undef unless ($servers > $traffic);
 
    # Input already validated, use private "fast" function
-   my $bprob =
-     Math::Telephony::ErlangB::_blocking_probability($traffic, $servers);
+   my $bprob = wait_probability($traffic, $servers);
 
    return $awt * ($servers - $traffic) / $bprob;
-}
-
+} ## end sub service_time_waittime
 
 =back
 

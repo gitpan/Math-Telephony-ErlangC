@@ -24,7 +24,7 @@ use Math::Telephony::ErlangC qw(:all);
    is(servers_waitprob(0.1, 0.9), 1, "servers_wait()");
    ok(traffic_waitprob(1, 0.1), "traffic_wait()");
 
-   my $mtprob = maxtime_probability(1, 1, 0.1, 1);
+   my $mtprob = maxtime_probability(1, 2, 0.1, 1);
    ok(($mtprob > 0 && $mtprob < 1), "maxtime_probability()");
    is(servers_maxtime(0.1, 0.9, 0.1, 1), 1, "servers_maxtime()");
    ok(traffic_maxtime(1, 0.1, 0.1, 1), "traffic_maxtime()");

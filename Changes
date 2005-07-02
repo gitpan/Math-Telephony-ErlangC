@@ -4,3 +4,6 @@ Revision history for Perl extension Math::Telephony::ErlangC.
 	- original version; created by h2xs 1.23 with options
 		-XAn Math::Telephony::ErlangC -b 5.8.0
 
+0.02  Fri Jul 01 12:15:00 2005
+   - corrected formulas, doesn't have formal tests but needed to correct!
+   - improved robustness for some edge cases
