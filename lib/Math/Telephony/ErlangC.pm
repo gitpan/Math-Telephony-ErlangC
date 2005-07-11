@@ -78,9 +78,9 @@ our %EXPORT_TAGS = (
       qw(
         wait_probability servers_waitprob traffic_waitprob
         maxtime_probability servers_maxtime traffic_maxtime
-        service_time_maxtime max_time_maxtime
+        service_time_maxtime service_time2_maxtime max_time_maxtime
         average_wait_time servers_waittime traffic_waittime
-        service_time_waittime
+        service_time_waittime  service_time2_waittime
         )
    ]
 );
@@ -91,7 +91,7 @@ our @EXPORT = qw(
 
 );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 # Preloaded methods go here.
 
@@ -147,6 +147,23 @@ below.
       return 1;
    } ## end sub validate
 }
+
+sub _cross {
+   my ($asc, $desc, $v_begin, $v_end, $prec) = @_;
+   return ($v_begin + $v_end) / 2 if ($v_end - $v_begin) < $prec;
+
+   my $v;
+   my $diff = $prec;
+   while ($v_end - $v_begin >= $prec) {
+      $v    = ($v_begin + $v_end) / 2;
+      my $d = $desc->($v);
+      my $a = $asc->($v);
+      $diff = $desc->($v) - $asc->($v);
+      if ($diff > 0) { $v_begin = $v }
+      else { $v_end = $v }
+   } ## end while ($v_end - $v_begin ...
+   return ($v_begin + $v_end) / 2;
+} ## end sub _cross
 
 ##########################################################################
 
@@ -205,6 +222,8 @@ value. The calculation is performed until the iteration process shows
 variations below $prec, which is optional and defaults to
 $Math::Telephony::ErlangB::default_precision.
 
+=back
+
 =cut
 
 sub traffic_waitprob {
@@ -231,8 +250,6 @@ sub traffic_waitprob {
       $servers
    );
 } ## end sub traffic_waitprob
-
-=back
 
 ##########################################################################
 
@@ -294,7 +311,8 @@ sub servers_maxtime {
    Math::Telephony::ErlangB::_generic_servers(
       sub {
          my $v = maxtime_probability($traffic, $_[0], $mst, $maxtime);
-         return defined $v && $v < $maxtime_probability;
+         return 1 unless defined $v;
+         return $v < $maxtime_probability;
       }
    );
 } ## end sub servers_maxtime
@@ -366,6 +384,42 @@ sub service_time_maxtime {
 
    return -($servers - $traffic) * $maxtime / log((1 - $mprob) / $wprob);
 } ## end sub service_time_maxtime
+
+=item B<$mst = service_time2_maxtime($frequency, $servers, $maxt_prob, $maxtime);>
+
+Evaluate the mean service time required when other parameters are fixed.
+
+=cut
+
+sub service_time2_maxtime {
+   my ($frequency, $servers, $mprob, $maxtime, $prec) = @_;
+   return undef
+     unless validate(
+      traffic     => $frequency,    # Validate like a traffic
+      servers     => $servers,
+      probability => $mprob,
+      time        => $maxtime,
+     );
+   return 0     unless $frequency > 0;
+   return undef unless $servers > 0;
+   return 0     unless $mprob > 0;
+   return undef unless $mprob < 1;
+   return 0     unless $maxtime > 0;
+
+   $prec = $Math::Telephony::ErlangB::default_precision
+     unless defined $prec;
+
+   my $theLog   = log(1 - $mprob);
+   my $lambdaTm = $frequency * $maxtime;
+   my $traffic  = _cross(
+      sub { log(wait_probability($_[0], $servers)) },
+      sub { $theLog + $lambdaTm * ($servers - $_[0]) / $_[0] },
+      $servers * $lambdaTm / ($lambdaTm - $theLog),
+      $servers,
+      $prec * $frequency # Adjusted precision for traffic domain
+   );
+   return $traffic / $frequency;
+} ## end sub service_time2_maxtime
 
 =item B<my $maxtime = max_time_maxtime($traffic, $servers, $maxt_prob, $mst);>
 
@@ -453,7 +507,8 @@ sub servers_waittime {
    Math::Telephony::ErlangB::_generic_servers(
       sub {
          my $v = average_wait_time($traffic, $_[0], $mst);
-         return defined $v && $v < $average_wait_time;
+         return 1 unless defined $v;
+         return $v > $average_wait_time;
       }
    );
 } ## end sub servers_waittime
@@ -515,11 +570,43 @@ sub service_time_waittime {
    return 0     unless $awt > 0;
    return undef unless ($servers > $traffic);
 
-   # Input already validated, use private "fast" function
    my $bprob = wait_probability($traffic, $servers);
 
    return $awt * ($servers - $traffic) / $bprob;
 } ## end sub service_time_waittime
+
+=item B<$mst = service_time2_waittime($frequency, $servers, $awt);>
+
+Evaluate the mean service time for $servers loaded with requests wich
+occur with $frequency, assuming that the average wait time in queue is $awt.
+
+=cut
+
+sub service_time2_waittime {
+   my ($frequency, $servers, $awt, $prec) = @_;
+   return undef
+     unless validate(
+      traffic   => $frequency,    # Validate exactly as a traffic
+      servers   => $servers,
+      time      => $awt,
+      precision => $prec,
+     );
+   return undef unless $frequency > 0;    # No calls...
+   return undef unless $servers > 0;
+   return 0     unless $awt > 0;
+
+   $prec = $Math::Telephony::ErlangB::default_precision
+     unless defined $prec;
+
+   my $lambdaTa = $frequency * $awt;
+   my $traffic  = _cross(
+      sub { wait_probability($_[0], $servers) },    # Ascending
+      sub { $lambdaTa * ($servers / $_[0] - 1) },   # Descending
+      $servers * $lambdaTa / (1 + $lambdaTa), $servers,
+      $prec * $frequency
+   );
+   return $traffic / $frequency;
+} ## end sub service_time2_waittime
 
 =back
 

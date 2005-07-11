@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 98;
+use Test::More tests => 100;
 #use Test::More 'no_plan';
 
 BEGIN { use_ok('Math::Telephony::ErlangC') }
@@ -33,7 +33,7 @@ use Math::Telephony::ErlangC qw(:all);
 
    my $awt = average_wait_time(0.5, 1, 0.1);
    ok($awt > 0, "average_wait_time()");
-   is(servers_waittime(1, 4, 0.1), 1, "servers_wait_time()");
+   is(servers_waittime(1, 4, 0.1), 2, "servers_wait_time()");
    ok(traffic_waittime(1, 4, 0.1), "traffic_wait_time()");
    ok(service_time_waittime(0.5, 1, 0.1), "service_time_waittime()");
 }
@@ -240,4 +240,6 @@ sub test_edge {
 } ## end sub test_edge
 
 # Test data
+is(servers_waittime(27.083, 5, 150), 34, "servers_waittime");
+is(servers_maxtime(27.083, 0.94, 150, 20), 34, "servers_maxtime");
 
