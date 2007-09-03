@@ -1,12 +1,17 @@
-use 5.008;
+use strict;
+use warnings;
 use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
+
 WriteMakefile(
-    NAME              => 'Math::Telephony::ErlangC',
-    VERSION_FROM      => 'lib/Math/Telephony/ErlangC.pm', # finds $VERSION
-    PREREQ_PM         => { Math::Telephony::ErlangB => 0.05 }, # e.g., Module::Name => 1.1
-    ($] >= 5.005 ?     ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM  => 'lib/Math/Telephony/ErlangC.pm', # retrieve abstract from module
-       AUTHOR         => 'A. U. Thor <poletti@muppet.>') : ()),
+    NAME                => 'Math::Telephony::ErlangC',
+    AUTHOR              => 'Flavio Poletti <flavio [at] polettix [dot] it>',
+    VERSION_FROM        => 'lib/Math/Telephony/ErlangC.pm',
+    ABSTRACT_FROM       => 'lib/Math/Telephony/ErlangC.pm',
+    PL_FILES            => {},
+    PREREQ_PM => {
+        'Test::More' => 0,
+        'version'    => 0,
+    },
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => 'Math-Telephony-ErlangC-*' },
 );
