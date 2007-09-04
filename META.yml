@@ -1,6 +1,6 @@
 ---
 name: Math-Telephony-ErlangC
-version: 0.3.3
+version: 1.0.0
 author:
   - 'Flavio Poletti <flavio [at] polettix [dot] it>'
 abstract: Erlang C calculations in Perl
@@ -13,7 +13,7 @@ requires:
 provides:
   Math::Telephony::ErlangC:
     file: lib/Math/Telephony/ErlangC.pm
-    version: 0.3.3
+    version: 1.0.0
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html
