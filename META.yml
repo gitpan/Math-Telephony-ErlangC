@@ -1,6 +1,6 @@
 ---
 name: Math-Telephony-ErlangC
-version: 1.0.0
+version: 1.0.1
 author:
   - 'Flavio Poletti <flavio [at] polettix [dot] it>'
 abstract: Erlang C calculations in Perl
@@ -8,12 +8,13 @@ license: perl
 resources:
   license: http://dev.perl.org/licenses/
 requires:
+  Math::Telephony::ErlangB: 0
   Test::More: 0
   version: 0
 provides:
   Math::Telephony::ErlangC:
     file: lib/Math/Telephony/ErlangC.pm
-    version: 1.0.0
+    version: 1.0.1
 generated_by: Module::Build version 0.2808
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.2.html

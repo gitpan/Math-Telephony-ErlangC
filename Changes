@@ -1,5 +1,8 @@
 Revision history for Perl extension Math::Telephony::ErlangC.
 
+1.0.1  Mon Oct 08 16:17:00 2007
+   - Added Math::Telephony::ErlangB as prerequisite
+
 1.0.0  Mon Sep 03 19:00:00 2007
    - jumped to 1.0.0. to cope with CPAN indexer problems
 

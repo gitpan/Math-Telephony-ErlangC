@@ -9,6 +9,7 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/Math/Telephony/ErlangC.pm',
     PL_FILES            => {},
     PREREQ_PM => {
+        'Math::Telephony::ErlangB' => 0,
         'Test::More' => 0,
         'version'    => 0,
     },

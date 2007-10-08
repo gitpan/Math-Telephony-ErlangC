@@ -8,6 +8,7 @@ my $builder = Module::Build->new(
     dist_author         => 'Flavio Poletti <flavio [at] polettix [dot] it>',
     dist_version_from   => 'lib/Math/Telephony/ErlangC.pm',
     requires => {
+        'Math::Telephony::ErlangB' => 0,
         'Test::More' => 0,
         'version'    => 0,
     },
