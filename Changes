@@ -1,5 +1,9 @@
 Revision history for Perl extension Math::Telephony::ErlangC.
 
+1.0.2  Sun Jul 21 16:07:00 2013
+   - Fixed issues with encoding & POD
+   - Removed POD tests for non-authors
+
 1.0.1  Mon Oct 08 16:17:00 2007
    - Added Math::Telephony::ErlangB as prerequisite
 

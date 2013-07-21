@@ -1,21 +1,24 @@
 ---
-name: Math-Telephony-ErlangC
-version: 1.0.1
+abstract: 'Erlang C calculations in Perl'
 author:
   - 'Flavio Poletti <flavio [at] polettix [dot] it>'
-abstract: Erlang C calculations in Perl
-license: perl
-resources:
-  license: http://dev.perl.org/licenses/
+build_requires:
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.112150'
+license: unknown
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Math-Telephony-ErlangC
+no_index:
+  directory:
+    - t
+    - inc
 requires:
   Math::Telephony::ErlangB: 0
   Test::More: 0
   version: 0
-provides:
-  Math::Telephony::ErlangC:
-    file: lib/Math/Telephony/ErlangC.pm
-    version: 1.0.1
-generated_by: Module::Build version 0.2808
-meta-spec:
-  url: http://module-build.sourceforge.net/META-spec-v1.2.html
-  version: 1.2
+version: v1.0.2
